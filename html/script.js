@@ -10,9 +10,7 @@ const OpenMenu = (data) => {
 
     let form = [
         "<form id='qb-input-form'>",
-        `<div class="heading">${
-            data.header != null ? data.header : "Form Title"
-        }</div>`,
+        `<div class="heading">${ data.header != null ? data.header : "Form Title" }</div>`,
     ];
 
     data.inputs.forEach((item, index) => {
@@ -40,9 +38,7 @@ const OpenMenu = (data) => {
         }
     });
     form.push(
-        `<div class="footer"><button type="submit" class="btn btn-success" id="submit">${
-            data.submitText ? data.submitText : "Submit"
-        }</button></div>`
+        `<div class="footer"><button type="submit" class="btn btn-success" id="submit">${data.submitText ? data.submitText : "Submit"}</button></div>`
     );
 
     form.push("</form>");
@@ -50,18 +46,19 @@ const OpenMenu = (data) => {
     $(".main-wrapper").html(form.join(" "));
 
     $("#qb-input-form").on("change", function (event) {
-        if( $(event.target).attr("type") == 'checkbox' ) {
-            const value = $(event.target).is(":checked") ? "true" : "false";
-            formInputs[$(event.target).attr("value")] = value;
-        }else{
-            formInputs[$(event.target).attr("name")] = $(event.target).val();
-        }
+        formInputs[$(event.target).attr("name")] = $(event.target).val();
     });
 
     $("#qb-input-form").on("submit", async function (event) {
         if (event != null) {
             event.preventDefault();
         }
+        let formData = $("#qb-input-form").serializeArray();
+
+        formData.forEach((item, index) => {
+            formInputs[item.name] = item.value;
+        });
+
         await $.post(
             `https://${GetParentResourceName()}/buttonSubmit`,
             JSON.stringify({ data: formInputs })
@@ -72,28 +69,28 @@ const OpenMenu = (data) => {
 
 const renderTextInput = (item) => {
     const { text, name } = item;
-    formInputs[name] = "";
-    const isRequired =
-        item.isRequired == "true" || item.isRequired ? "required" : "";
+    formInputs[name] = item.default ? item.default : "";
+    const isRequired = item.isRequired == "true" || item.isRequired ? "required" : "";
+    const defaultValue = item.default ? `value="${item.default}"` : ""
 
-    return ` <input placeholder="${text}" type="text" class="form-control" name="${name}" ${isRequired}/>`;
+    return ` <input placeholder="${text}" type="text" class="form-control" name="${name}" ${defaultValue} ${isRequired}/>`;
 };
 const renderPasswordInput = (item) => {
     const { text, name } = item;
-    formInputs[name] = "";
-    const isRequired =
-        item.isRequired == "true" || item.isRequired ? "required" : "";
+    formInputs[name] = item.default ? item.default : "";
+    const isRequired = item.isRequired == "true" || item.isRequired ? "required" : "";
+    const defaultValue = item.default ? `value="${item.default}"` : ""
 
-    return ` <input placeholder="${text}" type="password" class="form-control" name="${name}" ${isRequired}/>`;
+    return ` <input placeholder="${text}" type="password" class="form-control" name="${name}" ${defaultValue} ${isRequired}/>`;
 };
 const renderNumberInput = (item) => {
     try {
         const { text, name } = item;
-        formInputs[name] = "";
-        const isRequired =
-            item.isRequired == "true" || item.isRequired ? "required" : "";
+        formInputs[name] = item.default ? item.default : "";
+        const isRequired = item.isRequired == "true" || item.isRequired ? "required" : "";
+        const defaultValue = item.default ? `value="${item.default}"` : ""
 
-        return `<input placeholder="${text}" type="number" class="form-control" name="${name}" ${isRequired}/>`;
+        return `<input placeholder="${text}" type="number" class="form-control" name="${name}" ${defaultValue} ${isRequired}/>`;
     } catch (err) {
         console.log(err);
         return "";
@@ -107,9 +104,8 @@ const renderRadioInput = (item) => {
     let div = `<div class="form-input-group"> <div class="form-group-title">${text}</div>`;
     div += '<div class="input-group">';
     options.forEach((option, index) => {
-        div += `<label for="radio_${name}_${index}"> <input type="radio" id="radio_${name}_${index}" name="${name}" value="${
-            option.value
-        }" ${index == 0 ? "checked" : ""}> ${option.text}</label>`;
+        div += `<label for="radio_${name}_${index}"> <input type="radio" id="radio_${name}_${index}" name="${name}" value="${option.value}" 
+                ${(item.default ? item.default == option.value : index == 0) ? "checked" : ""}> ${option.text}</label>`;
     });
 
     div += "</div>";
@@ -119,14 +115,14 @@ const renderRadioInput = (item) => {
 
 const renderCheckboxInput = (item) => {
     const { options, name, text } = item;
-
+    formInputs[name] = options[0].value;
 
     let div = `<div class="form-input-group"> <div class="form-group-title">${text}</div>`;
     div += '<div class="input-group-chk">';
 
     options.forEach((option, index) => {
-        div += `<label for="chk_${name}_${index}">${option.text} <input type="checkbox" id="chk_${name}_${index}" name="${name}" value="${option.value}"></label>`;
-        formInputs[option.value] = 'false';
+        div += `<label for="chk_${name}_${index}">${option.text} <input type="checkbox" id="chk_${name}_${index}" name="${name}" value="${option.value}" ${option.checked ? 'checked' : ''}></label>`;
+        formInputs[option.value] = option.checked ? 'true' : 'false';
     });
 
     div += "</div>";
@@ -142,9 +138,9 @@ const renderSelectInput = (item) => {
     formInputs[name] = options[0].value;
 
     options.forEach((option, index) => {
-        div += `<option value="${option.value}" ${
-            option.checked != null ? "checked" : ""
-        }>${option.text}</option>`;
+        const isDefaultValue = item.default == option.value
+        div += `<option value="${option.value}" ${isDefaultValue ? 'selected' : '' }>${option.text}</option>`;
+        if(isDefaultValue){ formInputs[name] = option.value }
     });
     div += "</select>";
     return div;
